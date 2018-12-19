@@ -37,33 +37,33 @@ int main() {
   assert(gen.get_parents("D").size() == parents.size());
   assert(gen.get_children("A").size() == 2);
   assert("D" == gen["D"].get_id());
-//  gen.remove("A");
-//  assert(!gen.exists("A"));
-//  assert(gen.exists("B"));
-//  assert(gen.exists("C"));
-//  assert(gen.exists("D"));
-//  gen.remove("B");
-//  assert(!gen.exists("A"));
-//  assert(!gen.exists("B"));
-//  assert(!gen.exists("C"));
-//  assert(!gen.exists("D"));
-//  try {
-//    gen["E"];
-//  }
-//  catch (std::exception &e) {
-//    std::cout << e.what() << std::endl;
-//  }
-//  try {
-//    gen.create("E", "Goto Considered Harmful");
-//    gen.create("E", "Goto Considered Harmful");
-//  }
-//  catch (std::exception &e) {
-//    std::cout << e.what() << std::endl;
-//  }
-//  try {
-//    gen.remove("Goto Considered Harmful");
-//  }
-//  catch (std::exception &e) {
-//    std::cout << e.what() << std::endl;
-//  }
+  gen.remove("A");
+  assert(!gen.exists("A"));
+  assert(gen.exists("B"));
+  assert(gen.exists("C"));
+  assert(gen.exists("D"));
+  gen.remove("B");
+  assert(!gen.exists("A"));
+  assert(!gen.exists("B"));
+  assert(!gen.exists("C"));
+  assert(!gen.exists("D"));
+  try {
+    gen["E"];
+  }
+  catch (std::exception &e) {
+    std::cout << e.what() << std::endl;
+  }
+  try {
+    gen.create("E", "Goto Considered Harmful");
+    gen.create("E", "Goto Considered Harmful");
+  }
+  catch (std::exception &e) {
+    std::cout << e.what() << std::endl;
+  }
+  try {
+    gen.remove("Goto Considered Harmful");
+  }
+  catch (std::exception &e) {
+    std::cout << e.what() << std::endl;
+  }
 }

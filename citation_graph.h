@@ -11,6 +11,16 @@
 #include <typeinfo>
 #include <iostream>
 #include <vector>
+#include <vector>
+#include <set>
+#include <unordered_set>
+#include <unordered_map>
+#include <memory>
+#include <exception>
+#include <typeinfo>
+#include <iostream>
+#include <vector>
+
 
 //TODO sprawdzic noexcept
 
@@ -42,7 +52,7 @@ class TriedToRemoveRoot: public std::exception
 template <class Publication>
 struct Node{
     std::vector< std::weak_ptr< Node<Publication> > > parents;
-    std::vector< std::shared_ptr< Node<Publication> > > children;
+    std::set< std::shared_ptr< Node<Publication> > > children;
     std::unique_ptr<Publication> pub;
 };
 
@@ -85,7 +95,7 @@ const typename Publication::id_type CitationGraph<Publication>::get_root_id() co
 }
 
 template<typename Publication>
-std::vector<typename Publication::id_type> CitationGraph<Publication>::get_children(id_type_t const &id) const {
+std::vector<typename Publication::id_type> CitationGraph<Publication>::get_children(const id_type_t &id) const {
     if(!exists(id))
         throw PublicationNotFound();
     std::vector<id_type_t> res;
@@ -113,7 +123,7 @@ std::vector<typename Publication::id_type> CitationGraph<Publication>::get_paren
 
 template<typename Publication>
 bool CitationGraph<Publication>::exists(id_type_t const &id) const noexcept{
-    return pubs.find(id) != pubs.end();
+    return pubs.find(id) != pubs.end() && pubs.at(id).use_count()!=0;
 }
 
 template<typename Publication>
@@ -137,7 +147,7 @@ void CitationGraph<Publication>::create(const id_type_t &id, const id_type_t &pa
     std::shared_ptr< Node<Publication> > tmpPtr = std::make_shared< Node<Publication> >(std::move(tmp));
     pubs[id] = tmpPtr;
     std::shared_ptr< Node<Publication> > sptParent = parent.lock();
-    sptParent->children.emplace_back(tmpPtr);
+    sptParent->children.insert(tmpPtr);
 }
 
 template<typename Publication>
@@ -156,7 +166,7 @@ void CitationGraph<Publication>::create(const id_type_t &id, const std::vector<i
         std::weak_ptr< Node<Publication> > parent = pubs[parent_id];
         tmpPtr->parents.emplace_back(parent);
         std::shared_ptr< Node<Publication> > sptParent = parent.lock();
-        sptParent->children.emplace_back(tmpPtr);
+        sptParent->children.insert(tmpPtr);
     }
 
 }
@@ -167,18 +177,28 @@ void CitationGraph<Publication>::add_citation(const id_type_t &child_id, const i
         throw PublicationNotFound();
     std::shared_ptr< Node<Publication> > parentPtr = pubs[parent_id].lock();
     std::shared_ptr< Node<Publication> > childPtr = pubs[child_id].lock();
-    parentPtr->children.emplace_back(childPtr);
+    parentPtr->children.insert(childPtr);
     childPtr->parents.emplace_back(parentPtr);
 }
-/*
+
 template<typename Publication>
 void CitationGraph<Publication>::remove(const id_type_t &id) {
     if(!exists(id))
         throw PublicationNotFound();
-    if(id == id_root)
+    if(id == root->pub->get_id())
         throw TriedToRemoveRoot();
-
-}*/
+    //std::cerr<<pubs.size()<<"\n";
+    //std::cerr<<pubs[id].use_count()<<"\n";
+    std::shared_ptr< Node<Publication> > ptr = pubs[id].lock();
+    for(std::weak_ptr<Node<Publication>> parent : ptr->parents)
+    {
+        std::shared_ptr< Node<Publication> > parPtr = parent.lock();
+        parPtr->children.erase(ptr);
+    }
+    ptr.reset();
+    //std::cerr<<pubs[id].use_count()<<"\n";
+    //std::cerr<<pubs.size()<<"\n";
+}
 
 
 #ifndef ZAD5_CITATION_GRAPH_H
