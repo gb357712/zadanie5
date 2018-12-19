@@ -1,7 +1,3 @@
-//
-// Created by gabriel on 18.12.18.
-//
-
 #include <vector>
 #include <set>
 #include <unordered_set>
@@ -85,24 +81,41 @@ CitationGraph<Publication>::CitationGraph(const id_type_t &stem_id){
     Node<Publication> tmp;
     tmp.pub = std::make_unique<Publication>(Publication(stem_id));
     root = std::make_shared< Node<Publication> >(std::move(tmp));
-    pubs[ root->pub->get_id() ] = root;
+    try {
+      pubs[root->pub->get_id()] = root;
+    }
+    catch(...){
+      throw;      //tmp.pub powinien sie usunac
+    }
+
 }
 
 
 template<typename Publication>
 const typename Publication::id_type CitationGraph<Publication>::get_root_id() const noexcept(noexcept(std::declval<Publication>().get_id())) {
+  try {
     return root->pub->get_id();
+  }
+  catch(...){ //lapiemy get_id_exception
+    throw;
+  }
+
 }
 
 template<typename Publication>
 std::vector<typename Publication::id_type> CitationGraph<Publication>::get_children(const id_type_t &id) const {
     if(!exists(id))
         throw PublicationNotFound();
-    std::vector<id_type_t> res;
+    std::vector<id_type_t> res {};
     //TODO asercje na poprawnosc?
     std::shared_ptr< Node<Publication> > spt = pubs.at(id).lock();
+  try {
     for(std::shared_ptr< Node<Publication> > child : spt->children)
-        res.emplace_back(child->pub->get_id());
+      res.emplace_back(child->pub->get_id());
+  }
+  catch(...){   //lapiemy bad_alloc i get_id_exception
+    throw;
+  }
     return res;
 }
 
@@ -141,7 +154,12 @@ void CitationGraph<Publication>::create(const id_type_t &id, const id_type_t &pa
     if(!exists(parent_id))
         throw PublicationNotFound();
     Node<Publication> tmp;
-    tmp.pub = std::make_unique<Publication>(Publication(id));
+    try {
+      tmp.pub = std::make_unique<Publication>(Publication(id));
+    }
+    catch (std::bad_alloc){
+      throw;
+    }
     std::weak_ptr< Node<Publication> > parent = pubs.at(parent_id);
     tmp.parents.emplace_back(parent);
     std::shared_ptr< Node<Publication> > tmpPtr = std::make_shared< Node<Publication> >(std::move(tmp));
@@ -158,7 +176,12 @@ void CitationGraph<Publication>::create(const id_type_t &id, const std::vector<i
         if(!exists(parent_id))
             throw PublicationNotFound();
     Node<Publication> tmp;
+  try {
     tmp.pub = std::make_unique<Publication>(Publication(id));
+  }
+  catch (std::bad_alloc){
+    throw;
+  }
     std::shared_ptr< Node<Publication> > tmpPtr = std::make_shared< Node<Publication> >(std::move(tmp));
     pubs[id] = tmpPtr;
     for(id_type_t parent_id : parent_ids)
@@ -175,10 +198,18 @@ template<typename Publication>
 void CitationGraph<Publication>::add_citation(const id_type_t &child_id, const id_type_t &parent_id) {
     if(!exists(child_id) || !exists(parent_id))
         throw PublicationNotFound();
-    std::shared_ptr< Node<Publication> > parentPtr = pubs[parent_id].lock();
     std::shared_ptr< Node<Publication> > childPtr = pubs[child_id].lock();
+    for(std::weak_ptr< Node<Publication> > parent : childPtr->parents) //sprawdzam czy juz krawedz nie istnieje bo w secie nie będzie duplikatow ale w vectorze juz tak a chyba nie da sie miec seta<weak_ptr>
+    {
+      std::shared_ptr< Node<Publication> > sptParent = parent.lock();
+      if(sptParent->pub->get_id()==parent_id)
+        return;
+    }
+    std::shared_ptr< Node<Publication> > parentPtr = pubs[parent_id].lock();
+
     parentPtr->children.insert(childPtr);
     childPtr->parents.emplace_back(parentPtr);
+
 }
 
 template<typename Publication>
@@ -187,8 +218,8 @@ void CitationGraph<Publication>::remove(const id_type_t &id) {
         throw PublicationNotFound();
     if(id == root->pub->get_id())
         throw TriedToRemoveRoot();
-    //std::cerr<<pubs.size()<<"\n";
-    //std::cerr<<pubs[id].use_count()<<"\n";
+//    std::cerr<< "1 " << pubs.size()<<"\n";
+//    std::cerr<< "2 "<<pubs[id].use_count()<<"\n";
     std::shared_ptr< Node<Publication> > ptr = pubs[id].lock();
     for(std::weak_ptr<Node<Publication>> parent : ptr->parents)
     {
@@ -196,9 +227,12 @@ void CitationGraph<Publication>::remove(const id_type_t &id) {
         parPtr->children.erase(ptr);
     }
     ptr.reset();
-    //std::cerr<<pubs[id].use_count()<<"\n";
-    //std::cerr<<pubs.size()<<"\n";
+    pubs.erase(id);
+//    std::cerr<< "3 "<<pubs.size()<<"\n";
+//    std::cerr<< "4 "<<pubs[id].use_count()<<"\n";
+
 }
+
 
 
 #ifndef ZAD5_CITATION_GRAPH_H
