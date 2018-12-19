@@ -120,10 +120,8 @@ template<typename Publication>
 Publication &CitationGraph<Publication>::operator[](id_type_t const &id) const {
     if(!exists(id))
         throw PublicationNotFound();
-    //pubs.at(id).lock();
-    //std::weak_ptr< Node<Publication> > tmp = pubs.at(id).lock();
-    return root->pub->get_id();
-    //return tmp->pub->get_id();
+    std::shared_ptr< Node<Publication> > tmp = pubs.at(id).lock();
+    return *(tmp->pub);
 }
 
 template<typename Publication>
