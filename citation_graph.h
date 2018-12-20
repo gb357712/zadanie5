@@ -81,25 +81,13 @@ CitationGraph<Publication>::CitationGraph(const id_type_t &stem_id){
     Node<Publication> tmp;
     tmp.pub = std::make_unique<Publication>(Publication(stem_id));
     root = std::make_shared< Node<Publication> >(std::move(tmp));
-    try {
-      pubs[root->pub->get_id()] = root;
-    }
-    catch(...){
-      throw;      //tmp.pub powinien sie usunac
-    }
-
+    pubs[root->pub->get_id()] = root;
 }
 
 
 template<typename Publication>
 const typename Publication::id_type CitationGraph<Publication>::get_root_id() const noexcept(noexcept(std::declval<Publication>().get_id())) {
-  try {
     return root->pub->get_id();
-  }
-  catch(...){ //lapiemy get_id_exception
-    throw;
-  }
-
 }
 
 template<typename Publication>
@@ -109,13 +97,8 @@ std::vector<typename Publication::id_type> CitationGraph<Publication>::get_child
     std::vector<id_type_t> res {};
     //TODO asercje na poprawnosc?
     std::shared_ptr< Node<Publication> > spt = pubs.at(id).lock();
-  try {
     for(std::shared_ptr< Node<Publication> > child : spt->children)
       res.emplace_back(child->pub->get_id());
-  }
-  catch(...){   //lapiemy bad_alloc i get_id_exception
-    throw;
-  }
     return res;
 }
 
@@ -154,12 +137,7 @@ void CitationGraph<Publication>::create(const id_type_t &id, const id_type_t &pa
     if(!exists(parent_id))
         throw PublicationNotFound();
     Node<Publication> tmp;
-    try {
-      tmp.pub = std::make_unique<Publication>(Publication(id));
-    }
-    catch (std::bad_alloc){
-      throw;
-    }
+    tmp.pub = std::make_unique<Publication>(Publication(id));
     std::weak_ptr< Node<Publication> > parent = pubs.at(parent_id);
     tmp.parents.emplace_back(parent);
     std::shared_ptr< Node<Publication> > tmpPtr = std::make_shared< Node<Publication> >(std::move(tmp));
@@ -176,12 +154,7 @@ void CitationGraph<Publication>::create(const id_type_t &id, const std::vector<i
         if(!exists(parent_id))
             throw PublicationNotFound();
     Node<Publication> tmp;
-  try {
     tmp.pub = std::make_unique<Publication>(Publication(id));
-  }
-  catch (std::bad_alloc){
-    throw;
-  }
     std::shared_ptr< Node<Publication> > tmpPtr = std::make_shared< Node<Publication> >(std::move(tmp));
     pubs[id] = tmpPtr;
     for(id_type_t parent_id : parent_ids)
