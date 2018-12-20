@@ -20,6 +20,8 @@ private:
 
 int main() {
   CitationGraph<Publication> gen("Goto Considered Harmful");
+  //CitationGraph<Publication> gen2(gen); // blad kompilacji
+  //CitationGraph<Publication> gen3 = gen; // blad kompilacji
   Publication::id_type const id1 = gen.get_root_id(); // Czy to jest noexcept?
   assert(gen.exists(id1));
   assert(gen.get_parents(id1).size() == 0);
